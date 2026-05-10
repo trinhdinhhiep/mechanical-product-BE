@@ -1,0 +1,71 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows", "debian-openssl-1.0.x", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Article {
+  id           Int      @id @default(autoincrement())
+  slug         String   @unique @db.VarChar(255)
+  title        String   @db.VarChar(500)
+  excerpt      String   @db.Text
+  thumbnail    String   @db.VarChar(500)
+  category     String   @db.VarChar(100)
+  tags         String   @db.Text
+  author       String   @db.VarChar(100)
+  published_at DateTime @db.Date
+  content      Json
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("articles")
+}
+
+model Category {
+  id                String    @id @default(cuid())
+  slug              String    @unique @db.VarChar(255)
+  name              String    @db.VarChar(100)
+  subtitle          String    @db.VarChar(200)
+  banner_image      String    @db.VarChar(500)
+  description_image String    @db.VarChar(500)
+  description_text  Json
+  features          Json
+  products          Product[]
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  @@map("categories")
+}
+
+model Product {
+  id                String         @id @default(cuid())
+  slug              String         @unique @db.VarChar(255)
+  title             String         @db.VarChar(255)
+  image             String         @db.VarChar(500)
+  link              String         @db.VarChar(500)
+  description_image String?        @db.VarChar(500)
+  video_id          String?        @db.VarChar(100)
+  specs             Json?
+  category_id       String
+  category          Category       @relation(fields: [category_id], references: [id])
+  detail            ProductDetail?
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+
+  @@map("products")
+}
+
+model ProductDetail {
+  id               String  @id @default(cuid())
+  product_id       String  @unique
+  product          Product @relation(fields: [product_id], references: [id])
+  code             String? @db.VarChar(100)
+  points           Json
+  description_text Json
+
+  @@map("product_details")
+}
