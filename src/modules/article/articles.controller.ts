@@ -73,4 +73,14 @@ export const ArticlesController = {
       return res.status(500).json({ message: 'Lỗi server' });
     }
   },
+
+  // 🔥 GET /articles/featured — Bài viết featured (admin chọn)
+  async getFeaturedArticles(req: Request, res: Response) {
+    try {
+      const featuredArticles = await ArticlesService.getFeaturedArticles();
+      res.json({ data: featuredArticles });
+    } catch (error: any) {
+      res.status(500).json({ message: 'Lỗi lấy featured articles', error: error.message });
+    }
+  },
 };

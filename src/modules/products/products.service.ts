@@ -141,6 +141,88 @@ export const ProductsService = {
     };
   },
 
+  // 🔥 GET /products/hot — Sản phẩm bán chạy (is_hot = true)
+  async getHotProducts() {
+    const hotProducts = await prisma.product.findMany({
+      where: { is_hot: true },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        image: true,
+        link: true,
+      },
+      take: 4, // Giới hạn 4 sản phẩm
+    });
+    return hotProducts;
+  },
+
+  // GET /categories/:slug/products?page=1&limit=4
+  async getCategoryProducts(slug: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+
+    const [products, total] = await prisma.$transaction([
+      prisma.product.findMany({
+        where: { category: { slug } },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          image: true,
+          link: true,
+        },
+        skip,
+        take: limit,
+        orderBy: { created_at: 'asc' },
+      }),
+      prisma.product.count({
+        where: { category: { slug } },
+      }),
+    ]);
+
+    return {
+      data: products,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  },
+
+  // GET /products?page=1&limit=12&sort=default
+  async getAllProducts(page: number, limit: number, sort: string) {
+    const skip = (page - 1) * limit;
+
+    const orderBy =
+      sort === 'name_asc'
+        ? { title: 'asc' as const }
+        : sort === 'name_desc'
+          ? { title: 'desc' as const }
+          : { created_at: 'asc' as const }; // default
+
+    const [products, total] = await prisma.$transaction([
+      prisma.product.findMany({
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          image: true,
+          link: true,
+        },
+        skip,
+        take: limit,
+        orderBy,
+      }),
+      prisma.product.count(),
+    ]);
+
+    return {
+      data: products,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  },
+
   // DELETE /products/:id
   async deleteProduct(id: string) {
     const product = await prisma.product.findUnique({

@@ -19,6 +19,7 @@ model Article {
   author       String   @db.VarChar(100)
   published_at DateTime @db.Date
   content      Json
+  is_featured  Boolean  @default(false) // 🔥 Admin chọn tin tức nào hiển thị ở homepage
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
@@ -50,6 +51,7 @@ model Product {
   description_image String?        @db.VarChar(500)
   video_id          String?        @db.VarChar(100)
   specs             Json?
+  is_hot            Boolean        @default(false) // 🔥 Admin chọn sản phẩm bán chạy hiển thị ở sidebar
   category_id       String
   category          Category       @relation(fields: [category_id], references: [id])
   detail            ProductDetail?

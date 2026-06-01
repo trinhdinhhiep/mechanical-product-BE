@@ -63,9 +63,28 @@ export const ArticlesService = {
         author: data.author,
         content: data.content,
         published_at: new Date(data.published_at),
+        is_featured: data.is_featured ?? false, // 🔥 THÊM ĐÂY (optional từ request)
       },
     });
     return parseArticle(article);
+  },
+
+  // 🔥 GET /articles/featured — Bài viết featured (is_featured = true)
+  async getFeaturedArticles() {
+    const featuredArticles = await prisma.article.findMany({
+      where: { is_featured: true },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        excerpt: true,
+        thumbnail: true,
+        author: true,
+      },
+      orderBy: { published_at: 'desc' },
+      take: 3, // Lấy 3 bài featured mới nhất
+    });
+    return featuredArticles;
   },
 
   // DELETE /api/articles/:id

@@ -37,6 +37,19 @@ export const ProductsController = {
     res.json({ data: product });
   },
 
+  async getCategoryProducts(req: Request, res: Response) {
+    try {
+      const { slug } = req.params;
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(20, parseInt(req.query.limit as string) || 4); // giới hạn tối đa 20
+
+      const result = await ProductsService.getCategoryProducts(slug, page, limit);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: 'Lỗi lấy products', error: error.message });
+    }
+  },
+
   async deleteProduct(req: Request, res: Response) {
     try {
       const result = await ProductsService.deleteProduct(req.params.id);
@@ -59,6 +72,29 @@ export const ProductsController = {
     } catch (error: any) {
       // Bao gồm cả lỗi "còn products" từ service
       res.status(400).json({ message: error.message });
+    }
+  },
+
+  // 🔥 GET /products/hot — Sản phẩm bán chạy (admin chọn)
+  async getHotProducts(req: Request, res: Response) {
+    try {
+      const hotProducts = await ProductsService.getHotProducts();
+      res.json({ data: hotProducts });
+    } catch (error: any) {
+      res.status(500).json({ message: 'Lỗi lấy hot products', error: error.message });
+    }
+  },
+
+  async getAllProducts(req: Request, res: Response) {
+    try {
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(20, parseInt(req.query.limit as string) || 12);
+      const sort = (req.query.sort as string) || 'default';
+
+      const result = await ProductsService.getAllProducts(page, limit, sort);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: 'Lỗi lấy products', error: error.message });
     }
   },
 };
