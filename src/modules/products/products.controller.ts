@@ -97,4 +97,16 @@ export const ProductsController = {
       res.status(500).json({ message: 'Lỗi lấy products', error: error.message });
     }
   },
+
+  // update product hot status (admin)
+  async updateProductHotStatus(req: Request, res: Response) {
+    try {
+      const is_hot = Boolean(req.body.is_hot);
+      const result = await ProductsService.updateProductHotStatus(req.params.id, is_hot);
+      if (!result) return res.status(404).json({ message: 'Product not found' });
+      res.json({ message: 'Updated', data: result });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  },
 };

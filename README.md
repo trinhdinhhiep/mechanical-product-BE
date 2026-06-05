@@ -227,3 +227,106 @@ npm run build
 - Import lên phpMyAdmin
 
 **5. Start app**
+
+# Google Sheets Setup — Contact Form Integration
+
+## Tổng quan
+
+Khi khách hàng submit form liên hệ:
+
+1. Dữ liệu được lưu vào **Database** (Prisma) ngay lập tức
+2. Sau mỗi **5 giây**, các rows đang chờ trong queue sẽ được **batch ghi** lên Google Sheet 1 lần duy nhất (tránh lỗi `429: Too many requests`)
+
+---
+
+## 1. Tạo Google Cloud Project & Service Account
+
+1. Truy cập [Google Cloud Console](https://console.cloud.google.com)
+2. Tạo project mới hoặc chọn project có sẵn
+3. Vào **APIs & Services → Library** → tìm **Google Sheets API** → Enable
+4. Vào **APIs & Services → Credentials** → Create Credentials → **Service Account**
+5. Đặt tên Service Account → Create and Continue → Done
+6. Click vào Service Account vừa tạo → tab **Keys** → Add Key → Create new key → chọn **JSON** → Download
+
+---
+
+## 2. Lấy thông tin từ file JSON key
+
+Mở file JSON vừa download, lấy 2 giá trị:
+
+```json
+{
+  "client_email": "your-service-account@project.iam.gserviceaccount.com",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nABC...\n-----END PRIVATE KEY-----\n"
+}
+```
+
+---
+
+## 3. Tạo Google Sheet & cấp quyền
+
+1. Tạo Google Sheet mới
+2. Tạo header row ở hàng đầu tiên:
+
+| A    | B     | C     | D     | E          |
+| ---- | ----- | ----- | ----- | ---------- |
+| Name | Email | Phone | Notes | Created At |
+
+3. Lấy **Spreadsheet ID** từ URL:
+
+```
+https://docs.google.com/spreadsheets/d/[SPREADSHEET_ID]/edit
+```
+
+4. Click **Share** → dán `client_email` ở bước 2 vào → chọn quyền **Editor** → Send
+
+---
+
+## 4. Cấu hình `.env`
+
+```env
+GOOGLE_SHEET_ID="your_spreadsheet_id"
+GOOGLE_SHEET_NAME="Contacts"
+GOOGLE_SERVICE_ACCOUNT_EMAIL="your-service-account@project.iam.gserviceaccount.com"
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nABC...\n-----END PRIVATE KEY-----\n"
+```
+
+> ⚠️ `GOOGLE_PRIVATE_KEY` phải có dấu nháy kép `"..."` bao ngoài và giữ nguyên các ký tự `\n`
+
+---
+
+## 5. Auto Refresh Google Sheet (Apps Script)
+
+Google Sheet không tự reload khi có dữ liệu mới. Để tự động refresh mỗi 1 phút:
+
+1. Mở Google Sheet → **Extensions → Apps Script**
+2. Dán code sau:
+
+```js
+function autoRefresh() {
+  SpreadsheetApp.getActiveSpreadsheet().getActiveSheet().getRange('A1').getValue();
+}
+
+function startAutoRefresh() {
+  // Xóa trigger cũ nếu có
+  ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
+
+  // Set refresh mỗi 1 phút
+  ScriptApp.newTrigger('autoRefresh').timeBased().everyMinutes(1).create();
+}
+```
+
+3. Chạy hàm `startAutoRefresh` một lần → Sheet sẽ tự refresh mỗi 1 phút
+
+---
+
+## 6. Lưu ý
+
+- **Đồng hồ server phải chính xác** — Google JWT yêu cầu thời gian lệch không quá 5 phút. Nếu gặp lỗi `invalid_grant`, sync lại đồng hồ:
+  - Windows: `Settings → Time & Language → Date & Time → Sync now`
+  - Mac: `System Settings → General → Date & Time → Set automatically`
+  - Linux: `sudo timedatectl set-ntp true`
+
+- Dữ liệu luôn được **lưu DB trước** — nếu Google Sheets API lỗi, data không bị mất và sẽ được retry ở batch tiếp theo
+
+- Batch interval mặc định là **5 giây**, có thể chỉnh hằng số `BATCH_INTERVAL_MS` trong `contact.service.ts`

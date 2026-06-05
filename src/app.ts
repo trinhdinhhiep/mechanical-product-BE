@@ -5,6 +5,7 @@ import articlesRouter from './modules/article/articles.route';
 import productsRouter from './modules/products/products.route';
 import uploadRouter from './modules/upload/upload.route';
 import searchRouter from './modules/search/search.route';
+import contactRoute from './modules/contact/contact.route';
 
 const app = express();
 
@@ -20,5 +21,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use('/api/search', searchRouter);
+
+app.use('/api/contacts', contactRoute);
 
 export default app;

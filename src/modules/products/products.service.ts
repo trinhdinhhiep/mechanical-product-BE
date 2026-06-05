@@ -53,6 +53,7 @@ export const ProductsService = {
     return await prisma.product.create({
       data: {
         ...productData,
+        is_hot: data.is_hot ?? false,
         category: {
           connect: { id: category_id }, // Bắt buộc Category phải tồn tại
         },
@@ -152,6 +153,7 @@ export const ProductsService = {
         image: true,
         link: true,
       },
+      orderBy: { updated_at: 'desc' },
       take: 4, // Giới hạn 4 sản phẩm
     });
     return hotProducts;
@@ -258,5 +260,12 @@ export const ProductsService = {
     await prisma.category.delete({ where: { id } });
     await deleteLocalImages(category); // 👈
     return true;
+  },
+
+  // update product hot status (admin)
+  async updateProductHotStatus(id: string, is_hot: boolean) {
+    const product = await prisma.product.findUnique({ where: { id } });
+    if (!product) return null;
+    return await prisma.product.update({ where: { id }, data: { is_hot } });
   },
 };

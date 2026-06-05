@@ -13,5 +13,6 @@ router.get('/products/:slug', ProductsController.getProductBySlug);
 router.get('/products', ProductsController.getAllProducts);
 router.delete('/products/:id', ProductsController.deleteProduct);
 router.delete('/categories/:id', ProductsController.deleteCategory);
+router.patch('/products/:id/hot', ProductsController.updateProductHotStatus);
 
 export default router;
